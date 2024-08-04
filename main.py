@@ -171,10 +171,10 @@ def add_subtitles_to_video(video_path, srt_path, font_path, output_path):
 def index():
     return render_template('index.html')
 
-@app.route('/create', methods=['GET', 'POST'])
+@app.route('/create', methods=['POST'])
 def create():
-    global global_video_filename  # Move this line to the beginning of the function
-    if request.method == 'POST':
+    global global_video_filename
+    try:
         yt_link = request.form.get('yt_link')
         uploaded_file = request.files.get('uploaded_file')
 
@@ -220,6 +220,9 @@ def create():
             'message': response_message,
             'video_url': f"/uploaded_videos/{global_video_filename.rsplit('.', 1)[0]}_with_subtitles.mp4"
         })
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'message': 'An error occurred, please try again later.'}), 500
 
 @app.route('/uploaded_videos/<path:filename>', methods=['GET'])
 def download_file(filename):
