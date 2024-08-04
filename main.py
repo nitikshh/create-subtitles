@@ -191,7 +191,7 @@ def create():
                 response_message = "Failed to download YouTube video."
         elif uploaded_file:
             if not os.path.exists(UPLOAD_FOLDER):
-                os.makedirs(UPLOAD_FOLDER)  # Create the directory if it does not exist
+                os.makedirs(UPLOAD_FOLDER)
 
             video_filename = str(uuid.uuid4()) + '_' + uploaded_file.filename
             video_path = os.path.join(UPLOAD_FOLDER, video_filename)
@@ -216,6 +216,10 @@ def create():
             video_with_subtitles_path = os.path.join(UPLOAD_FOLDER, global_video_filename.rsplit('.', 1)[0] + '_with_subtitles.mp4')
             add_subtitles_to_video(video_path, srt_path, font_path, video_with_subtitles_path)
 
+        # Check if the video file exists
+        if not os.path.exists(video_with_subtitles_path):
+            raise FileNotFoundError(f"Video file with subtitles not found: {video_with_subtitles_path}")
+
         return jsonify({
             'message': response_message,
             'video_url': f"/uploaded_videos/{global_video_filename.rsplit('.', 1)[0]}_with_subtitles.mp4"
@@ -223,6 +227,7 @@ def create():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'message': 'An error occurred, please try again later.'}), 500
+
 
 @app.route('/uploaded_videos/<path:filename>', methods=['GET'])
 def download_file(filename):
