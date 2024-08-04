@@ -1,0 +1,8 @@
+Flask 
+werkzeug 
+moviepy 
+pydub 
+SpeechRecognition 
+numpy 
+pysrt 
+Pillow 
