@@ -8,7 +8,7 @@
         async function handleSubmit(event) {
             event.preventDefault();
             const formData = new FormData(event.target);
-            const response = await fetch('/', {
+            const response = await fetch('/create', {
                 method: 'POST',
                 body: formData
             });
