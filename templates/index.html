@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Upload/Download</title>
+    <script>
+        async function handleSubmit(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const response = await fetch('/', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('response').innerText = result.message;
+            document.getElementById('video-form').style.display = 'none';
+            if (result.video_url) {
+                document.getElementById('video-player').src = result.video_url;
+                document.getElementById('video-container').style.display = 'block';
+            }
+            document.getElementById('next-button').style.display = 'block';
+            document.getElementById('random-paragraph').style.display = 'block';
+        }
+    </script>
+    <style>
+        #next-button, #random-paragraph, #video-container {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload a video or provide a YouTube link</h1>
+    <form id="video-form" onsubmit="handleSubmit(event)">
+        <label for="yt_link">YouTube Link:</label>
+        <input type="url" id="yt_link" name="yt_link"><br><br>
+        <label for="uploaded_file">Upload Video:</label>
+        <input type="file" id="uploaded_file" name="uploaded_file" accept="video/*"><br><br>
+        <button type="submit">Submit</button>
+    </form>
+    <div id="response"></div>
+    <div id="video-container">
+        <video id="video-player" controls>
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    <button id="next-button" onclick="alert('Next button clicked!')">Next</button>
+    <p id="random-paragraph">This is a random paragraph that appears after the file is saved.</p>
+</body>
+</html>
