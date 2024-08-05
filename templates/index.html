@@ -3,48 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Upload/Download</title>
-    <script>
-        async function handleSubmit(event) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const response = await fetch('/create', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            document.getElementById('response').innerText = result.message;
-            document.getElementById('video-form').style.display = 'none';
-            if (result.video_url) {
-                document.getElementById('video-player').src = result.video_url;
-                document.getElementById('video-container').style.display = 'block';
-            }
-            document.getElementById('next-button').style.display = 'block';
-            document.getElementById('random-paragraph').style.display = 'block';
-        }
-    </script>
-    <style>
-        #next-button, #random-paragraph, #video-container {
-            display: none;
-        }
-    </style>
+    <title>Video Subtitle Generator</title>
 </head>
 <body>
-    <h1>Upload a video or provide a YouTube link</h1>
-    <form id="video-form" onsubmit="handleSubmit(event)">
+    <h1>Video Subtitle Generator</h1>
+    <form id="videoForm" enctype="multipart/form-data">
         <label for="yt_link">YouTube Link:</label>
-        <input type="url" id="yt_link" name="yt_link"><br><br>
-        <label for="uploaded_file">Upload Video:</label>
-        <input type="file" id="uploaded_file" name="uploaded_file" accept="video/*"><br><br>
+        <input type="text" id="yt_link" name="yt_link">
+        <br>
+        <label for="uploaded_file">Upload File:</label>
+        <input type="file" id="uploaded_file" name="uploaded_file">
+        <br>
         <button type="submit">Submit</button>
     </form>
-    <div id="response"></div>
-    <div id="video-container">
-        <video id="video-player" controls>
-            Your browser does not support the video tag.
-        </video>
-    </div>
-    <button id="next-button" onclick="alert('Next button clicked!')">Next</button>
-    <p id="random-paragraph">This is a random paragraph that appears after the file is saved.</p>
+    <h2 id="responseMessage"></h2>
+    <video id="video_player" controls width="640" height="480">
+        <source id="video_source" src="" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <script>
+        document.getElementById('videoForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            const ytLink = document.getElementById('yt_link').value;
+            const uploadedFile = document.getElementById('uploaded_file').files[0];
+            if (ytLink) formData.append('yt_link', ytLink);
+            if (uploadedFile) formData.append('uploaded_file', uploadedFile);
+            try {
+                const response = await fetch('/create', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                document.getElementById('responseMessage').innerText = result.message;
+                const videoUrl = result.video_with_subtitles_path ? '/uploaded_videos/' + result.video_with_subtitles_path.split('/').pop() : '';
+                document.getElementById('video_source').src = videoUrl;
+                document.getElementById('video_player').load();
+            } catch (error) {
+                document.getElementById('responseMessage').innerText = 'An error occurred: ' + error;
+            }
+        });
+    </script>
 </body>
 </html>
