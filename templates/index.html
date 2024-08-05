@@ -35,7 +35,8 @@
                     body: formData
                 });
                 const result = await response.json();
-                document.getElementById('responseMessage').innerText = result.message;
+                console.log(video_with_subtitles_path +"   "+ global_video_filename)
+                document.getElementById('responseMessage').innerText = result.response_message;
                 const videoUrl = result.video_with_subtitles_path ? '/uploaded_videos/' + result.video_with_subtitles_path.split('/').pop() : '';
                 document.getElementById('video_source').src = videoUrl;
                 document.getElementById('video_player').load();
