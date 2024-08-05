@@ -216,6 +216,9 @@ def create():
             video_with_subtitles_path = os.path.join(UPLOAD_FOLDER, global_video_filename.rsplit('.', 1)[0] + '_with_subs.mp4')
             add_subtitles_to_video(video_path, srt_path, font_path, video_with_subtitles_path)
             response_message += f" Subtitles added successfully to {global_video_filename}."
+            print(f"message - {response_message}, video path - {video_with_subtitles_path}")
+        else:
+            print("No video path Found")
 
         return jsonify({
             'message': response_message,
