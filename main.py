@@ -153,19 +153,23 @@ def add_text_to_frame(frame, text, font_path):
 
     return np.array(image)
 
-def add_subtitles_to_video(video_path, srt_path, font_path, output_path):
-    with VideoFileClip(video_path) as video:
-        subs = pysrt.open(srt_path)
+def add_subtitles_to_video(video_path, srt_path, output_path):
+    try:
+        with VideoFileClip(video_path) as video:
+            subs = pysrt.open(srt_path)
 
-        def process_frame(get_frame, t):
-            frame = get_frame(t)
-            for sub in subs:
-                if sub.start.ordinal / 1000 <= t <= sub.end.ordinal / 1000:
-                    frame = add_text_to_frame(frame, sub.text, font_path)
-            return frame
+            def process_frame(get_frame, t):
+                frame = get_frame(t)
+                for sub in subs:
+                    if sub.start.ordinal / 1000 <= t <= sub.end.ordinal / 1000:
+                        frame = add_text_to_frame(frame, sub.text)
+                return frame
 
-        new_video = video.fl(process_frame)
-        new_video.write_videofile(output_path, codec="libx264", audio_codec="aac")
+            new_video = video.fl(process_frame)
+            new_video.write_videofile(output_path, codec="libx264", audio_codec="aac")
+    except Exception as e:
+        print(f"An error occurred while adding subtitles: {e}")
+
 
 @app.route('/')
 def index():
