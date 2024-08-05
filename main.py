@@ -215,23 +215,18 @@ def create():
             font_path = 'BungeeSpice-Regular.ttf'
             video_with_subtitles_path = os.path.join(UPLOAD_FOLDER, global_video_filename.rsplit('.', 1)[0] + '_with_subs.mp4')
             add_subtitles_to_video(video_path, srt_path, font_path, video_with_subtitles_path)
-            response_message += f" Subtitles added successfully to {global_video_filename}."
-            print(f"message - {response_message}, video path - {video_with_subtitles_path}")
-        else:
-            print("No video path Found")
+            response_message += f" Subtitles added successfully. {global_video_filename.rsplit('.', 1)[0] + '_with_subs.mp4'}"
 
         return jsonify({
             'message': response_message,
-            'video_filename': global_video_filename,
             'video_with_subtitles_path': video_with_subtitles_path
         })
     except Exception as e:
-        return jsonify({'error': str(e)})
+        return jsonify({'message': f"An error occurred: {str(e)}"})
 
-@app.route('/uploaded_videos/<path:filename>')
-def download_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
+@app.route('/download/<filename>')
+def download(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(debug=True)
