@@ -3,45 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Subtitle Generator</title>
+    <title>Video Transcription and Subtitles</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        input[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+        }
+        video {
+            width: 100%;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Video Subtitle Generator</h1>
-    <form id="videoForm" enctype="multipart/form-data">
-        <label for="yt_link">YouTube Link:</label>
-        <input type="text" id="yt_link" name="yt_link">
-        <br>
-        <label for="uploaded_file">Upload File:</label>
-        <input type="file" id="uploaded_file" name="uploaded_file">
-        <br>
-        <button type="submit">Submit</button>
-    </form>
-    <h2 id="responseMessage"></h2>
-    <video id="video_player" controls width="640" height="480">
-        <source id="video_source" src="" type="video/mp4">
-        Your browser does not support the video tag.
-    </video>
+    <div class="container">
+        <h1>Upload or Provide YouTube Link</h1>
+        <form id="uploadForm">
+            <label for="yt_link">YouTube Link:</label>
+            <input type="text" id="yt_link" name="yt_link" placeholder="Enter YouTube video URL">
+            <label for="uploaded_file">Or upload video file:</label>
+            <input type="file" id="uploaded_file" name="uploaded_file">
+            <input type="submit" value="Submit">
+        </form>
+        <div id="result"></div>
+        <div id="videoContainer"></div>
+    </div>
     <script>
-        document.getElementById('videoForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const formData = new FormData();
-            const ytLink = document.getElementById('yt_link').value;
-            const uploadedFile = document.getElementById('uploaded_file').files[0];
-            if (ytLink) formData.append('yt_link', ytLink);
-            if (uploadedFile) formData.append('uploaded_file', uploadedFile);
-            try {
-                const response = await fetch('/create', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-                console.log(video_with_subtitles_path +"   "+ global_video_filename)
-                document.getElementById('responseMessage').innerText = result.response_message;
-                const videoUrl = result.video_with_subtitles_path ? '/uploaded_videos/' + result.video_with_subtitles_path.split('/').pop() : '';
-                document.getElementById('video_source').src = videoUrl;
-                document.getElementById('video_player').load();
-            } catch (error) {
-                document.getElementById('responseMessage').innerText = 'An error occurred: ' + error;
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch('/create', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('result').innerHTML = result.message;
+            const videoContainer = document.getElementById('videoContainer');
+            videoContainer.innerHTML = '';
+            if (result.video_with_subtitles_path) {
+                const videoElement = document.createElement('video');
+                videoElement.setAttribute('controls', 'controls');
+                videoElement.setAttribute('src', '/download/' + result.video_with_subtitles_path);
+                videoContainer.appendChild(videoElement);
             }
         });
     </script>
