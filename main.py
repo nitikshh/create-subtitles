@@ -212,7 +212,7 @@ def create():
             with open(srt_path, 'w', encoding='utf-8') as srt_file:
                 srt_file.write(srt_content)
 
-            font_path = 'BungeeSpice-Regular.ttf'
+            font_path = os.path.join(os.path.dirname(__file__), 'KdamThmorPro-Regular.ttf')
             video_with_subtitles_path = os.path.join(UPLOAD_FOLDER, global_video_filename.rsplit('.', 1)[0] + '_with_subs.mp4')
             add_subtitles_to_video(video_path, srt_path, font_path, video_with_subtitles_path)
             response_message += f" Subtitles added successfully. {global_video_filename.rsplit('.', 1)[0] + '_with_subs.mp4'}"
