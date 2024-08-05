@@ -11,7 +11,7 @@ import pysrt
 import tempfile
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Generate a random secret key
+app.secret_key = os.urandom(24)
 
 UPLOAD_FOLDER = 'uploaded_videos'
 if not os.path.exists(UPLOAD_FOLDER):
@@ -225,12 +225,9 @@ def create():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-@app.route('/download/<filename>', methods=['GET'])
+@app.route('/uploaded_videos/<path:filename>')
 def download_file(filename):
-    try:
-        return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
-    except Exception as e:
-        return jsonify({'error': str(e)})
+    return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
