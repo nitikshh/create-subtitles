@@ -8,6 +8,7 @@ from pydub import AudioSegment
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 import pysrt
+import tempfile
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Generate a random secret key
@@ -38,8 +39,8 @@ def download_youtube_video(url, output_path=UPLOAD_FOLDER):
         print(f"An error occurred: {e}")
 
 def extract_audio_from_video(video_path, audio_path):
-    video_clip = VideoFileClip(video_path)
-    video_clip.audio.write_audiofile(audio_path)
+    with VideoFileClip(video_path) as video_clip:
+        video_clip.audio.write_audiofile(audio_path)
 
 def transcribe_audio(audio_path, recognizer, language="en", chunk_length_ms=30000, retries=3):
     audio = AudioSegment.from_wav(audio_path)
@@ -47,27 +48,26 @@ def transcribe_audio(audio_path, recognizer, language="en", chunk_length_ms=3000
     transcription = ""
 
     for i, chunk in enumerate(chunks):
-        chunk_path = f"/tmp/chunk_{i}.wav"
-        chunk.export(chunk_path, format="wav")
-        with sr.AudioFile(chunk_path) as source:
-            audio_data = recognizer.record(source)
-            attempts = 0
-            while attempts < retries:
-                try:
-                    text = recognizer.recognize_google(audio_data, language=language)
-                    transcription += text + " "
-                    break
-                except sr.UnknownValueError:
-                    transcription += "[Unintelligible] "
-                    break
-                except sr.RequestError as e:
-                    attempts += 1
-                    if attempts >= retries:
-                        transcription += f"[Error: {e}] "
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as chunk_file:
+            chunk.export(chunk_file.name, format="wav")
+            with sr.AudioFile(chunk_file.name) as source:
+                audio_data = recognizer.record(source)
+                attempts = 0
+                while attempts < retries:
+                    try:
+                        text = recognizer.recognize_google(audio_data, language=language)
+                        transcription += text + " "
                         break
-                    print(f"Retrying transcription... (Attempt {attempts}/{retries})")
-
-        os.remove(chunk_path)
+                    except sr.UnknownValueError:
+                        transcription += "[Unintelligible] "
+                        break
+                    except sr.RequestError as e:
+                        attempts += 1
+                        if attempts >= retries:
+                            transcription += f"[Error: {e}] "
+                            break
+                        print(f"Retrying transcription... (Attempt {attempts}/{retries})")
+            os.remove(chunk_file.name)
 
     return transcription.strip()
 
@@ -154,18 +154,18 @@ def add_text_to_frame(frame, text, font_path):
     return np.array(image)
 
 def add_subtitles_to_video(video_path, srt_path, font_path, output_path):
-    video = VideoFileClip(video_path)
-    subs = pysrt.open(srt_path)
+    with VideoFileClip(video_path) as video:
+        subs = pysrt.open(srt_path)
 
-    def process_frame(get_frame, t):
-        frame = get_frame(t)
-        for sub in subs:
-            if sub.start.ordinal / 1000 <= t <= sub.end.ordinal / 1000:
-                frame = add_text_to_frame(frame, sub.text, font_path)
-        return frame
+        def process_frame(get_frame, t):
+            frame = get_frame(t)
+            for sub in subs:
+                if sub.start.ordinal / 1000 <= t <= sub.end.ordinal / 1000:
+                    frame = add_text_to_frame(frame, sub.text, font_path)
+            return frame
 
-    new_video = video.fl(process_frame)
-    new_video.write_videofile(output_path, codec="libx264", audio_codec="aac")
+        new_video = video.fl(process_frame)
+        new_video.write_videofile(output_path, codec="libx264", audio_codec="aac")
 
 @app.route('/')
 def index():
@@ -209,30 +209,28 @@ def create():
             srt_content = generate_srt(segments, video_duration)
             srt_path = os.path.join(UPLOAD_FOLDER, global_video_filename.rsplit('.', 1)[0] + '.srt')
 
-            with open(srt_path, 'w') as srt_file:
+            with open(srt_path, 'w', encoding='utf-8') as srt_file:
                 srt_file.write(srt_content)
 
-            font_path = "KdamThmorPro-Regular.ttf"
-            video_with_subtitles_path = os.path.join(UPLOAD_FOLDER, global_video_filename.rsplit('.', 1)[0] + '_with_subtitles.mp4')
+            font_path = 'BungeeSpice-Regular.ttf'
+            video_with_subtitles_path = os.path.join(UPLOAD_FOLDER, global_video_filename.rsplit('.', 1)[0] + '_with_subs.mp4')
             add_subtitles_to_video(video_path, srt_path, font_path, video_with_subtitles_path)
-
-        # Check if the video file exists
-        if not os.path.exists(video_with_subtitles_path):
-            raise FileNotFoundError(f"Video file with subtitles not found: {video_with_subtitles_path}")
+            response_message += f" Subtitles added successfully to {global_video_filename}."
 
         return jsonify({
             'message': response_message,
-            'video_url': f"/uploaded_videos/{global_video_filename.rsplit('.', 1)[0]}_with_subtitles.mp4"
+            'video_filename': global_video_filename,
+            'video_with_subtitles_path': video_with_subtitles_path
         })
     except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({'message': 'An error occurred, please try again later.'}), 500
+        return jsonify({'error': str(e)})
 
-
-@app.route('/uploaded_videos/<path:filename>', methods=['GET'])
+@app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    try:
+        return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(debug=True, host='0.0.0.0')
